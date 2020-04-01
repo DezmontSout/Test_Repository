@@ -30,18 +30,18 @@ public class Server {
     private static final String UNKNOWN_ERROR_MESSAGE = "Unknown error";
     private static final String USER_ID_KEY = "user_id";
     private static final String PATH_TO_URL_MODULE = "pathToURLModule";
-    private static final String KEY_IN_PROPERTIES_PORT = "port";
-    private static final String KEY_IN_PROPERTIES_BUFFER_SIZE = "bufferSize";
-    private static final String KEY_IN_PROPERTIES_THREAD_POOL_CAPACITY = "threadPoolCapacity";
-    private static final String KEY_IN_PROPERTIES_SESSION_LIFE_TIME = "sessionLifeTime";
-    private static final String KEY_IN_PROPERTIES_TIMER_START_INTERVAL = "timerStartInterval";
-    private static final String KEY_IN_PROPERTIES_ADDRESS_RESOURCES = "addressResources";
+    private static final String PORT_KEY = "port";
+    private static final String BUFFER_SIZE_KEY = "bufferSize";
+    private static final String THREAD_POOL_CAPACITY_KEY = "threadPoolCapacity";
+    private static final String SESSION_LIFE_TIME_KEY = "sessionLifeTime";
+    private static final String TIMER_START_INTERVAL_KEY = "timerStartInterval";
+    private static final String ADDRESS_RESOURCES_KEY = "addressResources";
     private static final int DEFAULT_PORT = 1488;
     private static final int DEFAULT_BUFFER_SIZE = 10485760;
     private static final int DEFAULT_THREAD_POOL_CAPACITY = 20;
     private static final int TIMER_START_DELAY = 0;
-    private static final int DEFAULT_SESSION_LIFE_TIME = 600000;
-    private static final int DEFAULT_TIMER_START_INTERVAL = 300000;
+    private static final long DEFAULT_SESSION_LIFE_TIME = 600000;
+    private static final long DEFAULT_TIMER_START_INTERVAL = 300000;
     private Integer port;
     private Integer bufferSize;
     private Map<String, HttpSession> sessions = new HashMap<>();
@@ -54,14 +54,14 @@ public class Server {
         this.properties = properties;
         ApplicationLoader applicationLoader = new ApplicationLoader();
         urlHandlers.putAll(applicationLoader.load(properties.getProperty(PATH_TO_URL_MODULE)));
-        this.port = Optional.of(Integer.parseInt(properties.getProperty(KEY_IN_PROPERTIES_PORT))).orElse(DEFAULT_PORT);
-        this.bufferSize = Optional.of(Integer.parseInt(properties.getProperty(KEY_IN_PROPERTIES_BUFFER_SIZE))).orElse(DEFAULT_BUFFER_SIZE);
-        threadPool = Executors.newFixedThreadPool(Optional.of(Integer.parseInt(properties.getProperty(KEY_IN_PROPERTIES_THREAD_POOL_CAPACITY))).
+        this.port = Optional.of(Integer.parseInt(properties.getProperty(PORT_KEY))).orElse(DEFAULT_PORT);
+        this.bufferSize = Optional.of(Integer.parseInt(properties.getProperty(BUFFER_SIZE_KEY))).orElse(DEFAULT_BUFFER_SIZE);
+        threadPool = Executors.newFixedThreadPool(Optional.of(Integer.parseInt(properties.getProperty(THREAD_POOL_CAPACITY_KEY))).
                 orElse(DEFAULT_THREAD_POOL_CAPACITY));
         Timer sessionRemoveTimer = new Timer();
         sessionRemoveTimer.scheduleAtFixedRate(new SessionRemover(sessions, Optional.of(Long.parseLong(properties.getProperty
-                (KEY_IN_PROPERTIES_SESSION_LIFE_TIME))).orElse((long) DEFAULT_SESSION_LIFE_TIME)), TIMER_START_DELAY, Optional.of
-                (Long.parseLong(properties.getProperty(KEY_IN_PROPERTIES_TIMER_START_INTERVAL))).orElse((long) DEFAULT_TIMER_START_INTERVAL));
+                (SESSION_LIFE_TIME_KEY))).orElse(DEFAULT_SESSION_LIFE_TIME)), TIMER_START_DELAY, Optional.of
+                (Long.parseLong(properties.getProperty(TIMER_START_INTERVAL_KEY))).orElse(DEFAULT_TIMER_START_INTERVAL));
     }
 
     public void start() throws IOException {
@@ -131,7 +131,7 @@ public class Server {
         if (urlHandlers.containsKey(request.getResource())) {
             return urlHandlers.get(request.getResource());
         } else {
-            return new DefaultHttpHandler(properties.getProperty(KEY_IN_PROPERTIES_ADDRESS_RESOURCES));
+            return new DefaultHttpHandler(properties.getProperty(ADDRESS_RESOURCES_KEY));
         }
     }
 
