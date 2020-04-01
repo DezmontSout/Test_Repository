@@ -56,8 +56,8 @@ public class Server {
         urlHandlers.putAll(applicationLoader.load(properties.getProperty(PATH_TO_URL_MODULE)));
         this.port = Optional.of(Integer.parseInt(properties.getProperty(PORT_KEY))).orElse(DEFAULT_PORT);
         this.bufferSize = Optional.of(Integer.parseInt(properties.getProperty(BUFFER_SIZE_KEY))).orElse(DEFAULT_BUFFER_SIZE);
-        threadPool = Executors.newFixedThreadPool(Optional.of(Integer.parseInt(properties.getProperty(THREAD_POOL_CAPACITY_KEY))).
-                orElse(DEFAULT_THREAD_POOL_CAPACITY));
+        threadPool = Executors.newFixedThreadPool(Optional.of(Integer.parseInt(properties.getProperty(THREAD_POOL_CAPACITY_KEY)))
+                .orElse(DEFAULT_THREAD_POOL_CAPACITY));
         Timer sessionRemoveTimer = new Timer();
         sessionRemoveTimer.scheduleAtFixedRate(new SessionRemover(sessions, Optional.of(Long.parseLong(properties.getProperty
                 (SESSION_LIFE_TIME_KEY))).orElse(DEFAULT_SESSION_LIFE_TIME)), TIMER_START_DELAY, Optional.of
@@ -109,7 +109,7 @@ public class Server {
     }
 
     private HttpSession getSession(Request request, Response response) {
-        if (sessionIsNotExists(request)) {
+        if (sessionDoesNotExists(request)) {
             Session session = new Session();
             session.setLastRequestTime(new Date());
             String userID = UUID.randomUUID().toString();
@@ -122,7 +122,7 @@ public class Server {
         return session;
     }
 
-    private boolean sessionIsNotExists(Request request) {
+    private boolean sessionDoesNotExists(Request request) {
         return !(request.getCookie(USER_ID_KEY) != null && sessions.containsKey(request.getCookie(USER_ID_KEY).
                 split(CommonConstants.SEMICOLON_SYMBOL)[0]));
     }

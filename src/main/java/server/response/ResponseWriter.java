@@ -11,14 +11,16 @@ import java.util.Map;
 
 public class ResponseWriter {
 
+    private static final int END_OF_STREAM = -1;
+
     public void write(Response response, BufferedOutputStream bufferedOutputStream, int bufferSize) throws IOException {
         bufferedOutputStream.write((HTTPUtils.HTTP_VERSION + response.getStatus() + CommonConstants.SPACE + response.getCommentForResponseStatus()
-                + HTTPUtils.REQUEST_HEADERS_END_LINE).
-                getBytes(Charset.defaultCharset()));
+                + HTTPUtils.REQUEST_HEADERS_END_LINE)
+                .getBytes(Charset.defaultCharset()));
         writeHeaders(response, bufferedOutputStream);
         try (BufferedInputStream resourceInputStream = new BufferedInputStream(response.getResource(), bufferSize)) {
             int symbol = resourceInputStream.read();
-            while (symbol != -1) {
+            while (symbol != END_OF_STREAM) {
                 bufferedOutputStream.write(symbol);
                 symbol = resourceInputStream.read();
             }

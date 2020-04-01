@@ -25,6 +25,7 @@ public final class HTTPUtils {
     public static final String CONTENT_LENGTH_HEADER = "Content-Length";
     public static final String CONTENT_TYPE_HEADER = "Content-Type";
     public static final String CONTENT_TYPE_TEXT_HTML = "text/html";
+    public static final char REQUEST_HEADER_END_LINE = '\n';
 
 
     public static final int NOT_FOUND_STATUS = 404;

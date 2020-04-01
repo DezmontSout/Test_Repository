@@ -22,7 +22,9 @@ public class ApplicationLoader {
     private static final String JAR_FILE = "jar:file:";
     private static final String END_TO_FILE_PATH = "!/";
     private static final String CLASS = ".class";
-    
+    private static final int START_OF_CLASS_NAME = 0;
+    private static final int CLASS_TYPE_FILE_EXTENSION = 6;
+
     public ApplicationLoader() {
 
     }
@@ -31,8 +33,7 @@ public class ApplicationLoader {
         Map<String, HttpHandler> urlHandlers = new HashMap<>();
         JarFile jarFile = new JarFile(pathToURLModule);
         Enumeration<JarEntry> enumeration = jarFile.entries();
-        URLClassLoader urlClassLoader = new URLClassLoader(new URL[]{new URL(JAR_FILE +
-                pathToURLModule + END_TO_FILE_PATH)});
+        URLClassLoader urlClassLoader = new URLClassLoader(new URL[]{new URL(JAR_FILE + pathToURLModule + END_TO_FILE_PATH)});
         while (enumeration.hasMoreElements()) {
             JarEntry jarEntry = enumeration.nextElement();
             if (jarEntry.getName().endsWith(CLASS)) {
@@ -43,7 +44,7 @@ public class ApplicationLoader {
     }
 
     private void loadClass(URLClassLoader urlClassLoader, JarEntry jarEntry, Map<String, HttpHandler> urlHandlers) throws ClassNotFoundException, NoSuchMethodException, InstantiationException, IllegalAccessException, InvocationTargetException {
-        String className = jarEntry.getName().substring(0, jarEntry.getName().length() - 6);
+        String className = jarEntry.getName().substring(START_OF_CLASS_NAME, jarEntry.getName().length() - CLASS_TYPE_FILE_EXTENSION);
         className = className.replace(CommonConstants.SLASH, CommonConstants.DOT);
         Class clazz = urlClassLoader.loadClass(className);
         Annotation annotation = clazz.getAnnotation(WebHandler.class);

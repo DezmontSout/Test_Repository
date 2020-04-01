@@ -8,20 +8,21 @@ import java.util.Map;
 
 public final class ServerUtils {
 
-    private ServerUtils() {
-    }
-
+    public static final int END_OF_REQUEST = -1;
     private static final String AMPERSAND = "&";
     private static final String EQUALLY_SIGN = "=";
+
+    private ServerUtils() {
+    }
 
     public static String readLine(BufferedInputStream bufferedInputStream) throws IOException {
         StringBuilder line = new StringBuilder();
             int symbol = bufferedInputStream.read();
-            while (symbol != -1 && (char) symbol != '\n') {
+            while (symbol != END_OF_REQUEST && (char) symbol != HTTPUtils.REQUEST_HEADER_END_LINE) {
                 line.append((char) symbol);
                 symbol = bufferedInputStream.read();
             }
-            if (symbol != -1) {
+            if (symbol != END_OF_REQUEST) {
                 line.append((char) symbol);
             }
         return line.toString();
