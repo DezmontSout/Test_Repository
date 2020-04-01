@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class Response implements HttpResponse {
+
     private static final String START_OF_A_GOOD_RESPONSE_STATUS = "2";
     private Map<String, String> headers = new HashMap<>();
     private InputStream responseResource;

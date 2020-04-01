@@ -13,8 +13,8 @@ import java.util.logging.Logger;
 
 public class DefaultHttpHandler implements com.artem.server.api.HttpHandler {
 
-    public static final String DEFAULT_HTML_FILE = "FileNotFound.html";
-    public static final String FILE_NOT_FOUND_MESSAGE = "File not found \r\n";
+    private static final String DEFAULT_HTML_FILE = "FileNotFound.html";
+    private static final String FILE_NOT_FOUND_MESSAGE = "File not found \r\n";
     private String addressResources;
     private static final Logger LOGGER = Logger.getLogger(DefaultHttpHandler.class.getName());
 

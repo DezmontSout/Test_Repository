@@ -8,7 +8,7 @@ import java.util.Map;
 
 public final class ServerUtils {
 
-    public static final int END_OF_REQUEST = -1;
+    private static final int END_OF_REQUEST = -1;
     private static final String AMPERSAND = "&";
     private static final String EQUALLY_SIGN = "=";
 
