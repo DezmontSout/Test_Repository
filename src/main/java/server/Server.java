@@ -13,6 +13,7 @@ import utils.HTTPUtils;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
@@ -27,21 +28,23 @@ public class Server {
 
     private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
     private static final String INFO_ABOUT_REQUEST = "got request, method: %s, requested resource: %s \r\n";
-    private static final String PATH_TO_FILE_WITH_STOP_KEY = "For Stop File\\StopServer.txt";
+    private static final String PATH_TO_FILE_WITH_STOP_KEY = "StopServer.txt";
     private static final String MISSING_FILE_WITH_STOP_KEY = "File with Stop Key not found";
     private static final String UNKNOWN_ERROR_MESSAGE = "Unknown error";
     private static final String USER_ID_KEY = "user_id";
-    private static final String PATH_TO_URL_MODULE = "deploy\\URLModule-0.0.1.jar";
+    private static final String PATH_TO_CATALOG_WITH_URL_MODULE = "deploy\\";
     private static final String PORT_KEY = "port";
     private static final String BUFFER_SIZE_KEY = "bufferSize";
     private static final String THREAD_POOL_CAPACITY_KEY = "threadPoolCapacity";
     private static final String SESSION_LIFE_TIME_KEY = "sessionLifeTime";
     private static final String TIMER_START_INTERVAL_KEY = "timerStartInterval";
+    private static final String HOST_KEY = "host";
     private static final String PATH_TO_RESOURCES_KEY = "pathToResources";
-    private static final String SERVER_ADDRESS = "http://127.0.0.1";
+    private static final String DEFAULT_HOST = "127.0.0.1";
     private static final int DEFAULT_PORT = 1488;
     private static final int DEFAULT_BUFFER_SIZE = 10485760;
     private static final int DEFAULT_THREAD_POOL_CAPACITY = 20;
+    private static final int MAX_CONNECTIONS_COUNT = DEFAULT_THREAD_POOL_CAPACITY;
     private static final int TIMER_START_DELAY = 0;
     private static final long DEFAULT_SESSION_LIFE_TIME = 600000;
     private static final long DEFAULT_TIMER_START_INTERVAL = 300000;
@@ -58,27 +61,29 @@ public class Server {
             throws NoSuchMethodException, IOException, InstantiationException, IllegalAccessException, InvocationTargetException, ClassNotFoundException {
         this.properties = properties;
         ApplicationLoader applicationLoader = new ApplicationLoader();
-        urlHandlers.putAll(applicationLoader.load(PATH_TO_URL_MODULE));
-        this.port = Optional.of(Integer.parseInt(properties.getProperty(PORT_KEY))).orElse(DEFAULT_PORT);
-        this.bufferSize = Optional.of(Integer.parseInt(properties.getProperty(BUFFER_SIZE_KEY))).orElse(DEFAULT_BUFFER_SIZE);
-        threadPool = Executors.newFixedThreadPool(Optional.of(Integer.parseInt(properties.getProperty(THREAD_POOL_CAPACITY_KEY)))
+        urlHandlers.putAll(applicationLoader.load(PATH_TO_CATALOG_WITH_URL_MODULE));
+        this.port = Optional.ofNullable(properties.getProperty(PORT_KEY)).map(Integer::parseInt).orElse(DEFAULT_PORT);
+        this.bufferSize = Optional.ofNullable(properties.getProperty(BUFFER_SIZE_KEY)).map(Integer::parseInt).orElse(DEFAULT_BUFFER_SIZE);
+        threadPool = Executors.newFixedThreadPool(Optional.ofNullable(properties.getProperty(THREAD_POOL_CAPACITY_KEY)).map(Integer::parseInt)
                 .orElse(DEFAULT_THREAD_POOL_CAPACITY));
         serverIsAlive = true;
         Timer sessionRemoveTimer = new Timer();
-        sessionRemoveTimer.scheduleAtFixedRate(new SessionRemover(sessions, Optional.of(Long.parseLong(properties.getProperty
-                (SESSION_LIFE_TIME_KEY))).orElse(DEFAULT_SESSION_LIFE_TIME)), TIMER_START_DELAY, Optional.of
-                (Long.parseLong(properties.getProperty(TIMER_START_INTERVAL_KEY))).orElse(DEFAULT_TIMER_START_INTERVAL));
+        sessionRemoveTimer.scheduleAtFixedRate(new SessionRemover(sessions, Optional.ofNullable(properties.getProperty
+                (SESSION_LIFE_TIME_KEY)).map(Long::parseLong).orElse(DEFAULT_SESSION_LIFE_TIME)), TIMER_START_DELAY, Optional.ofNullable
+                (properties.getProperty(TIMER_START_INTERVAL_KEY)).map(Long::parseLong).orElse(DEFAULT_TIMER_START_INTERVAL));
+    }
+
+    public void start() throws IOException {
+        String serverAddress = Optional.ofNullable(properties.getProperty(HOST_KEY)).orElse(DEFAULT_HOST);
+        InetAddress address = InetAddress.getByName(serverAddress);
+        ServerSocket serverSocket = new ServerSocket(port, MAX_CONNECTIONS_COUNT, address);
         try(FileWriter fileWriter = new FileWriter(PATH_TO_FILE_WITH_STOP_KEY)){
             stopServerKey = UUID.randomUUID();
-            fileWriter.write(SERVER_ADDRESS + CommonConstants.COLON_SYMBOL + port + CommonConstants.SLASH + stopServerKey);
+            fileWriter.write(serverAddress + CommonConstants.COLON_SYMBOL + port + CommonConstants.SLASH + stopServerKey);
         }
         catch (IOException e) {
             LOGGER.log(Level.INFO, MISSING_FILE_WITH_STOP_KEY);
         }
-    }
-
-    public void start() throws IOException {
-        ServerSocket serverSocket = new ServerSocket(port);
         while (serverIsAlive) {
             acceptAndProcess(serverSocket);
         }
