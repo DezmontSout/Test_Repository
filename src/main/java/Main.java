@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 
 public class Main {
 
-    public static final String ADDRESS_PROPERTIES = "C:\\Users\\Dezmont\\IdeaProjects\\Test_Repository\\src\\main\\resources\\server.properties";
+    public static final String ADDRESS_PROPERTIES = "src\\main\\resources\\server.properties";
     private static final Logger LOGGER = Logger.getLogger(Main.class.getName());
 
     public static void main(String[] args) {

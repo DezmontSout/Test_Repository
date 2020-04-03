@@ -27,17 +27,18 @@ public class Server {
 
     private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
     private static final String INFO_ABOUT_REQUEST = "got request, method: %s, requested resource: %s \r\n";
-    private static final String PATH_TO_FILE_WITH_STOP_KEY = "E:\\Server\\StopServer.txt";
+    private static final String PATH_TO_FILE_WITH_STOP_KEY = "For Stop File\\StopServer.txt";
     private static final String MISSING_FILE_WITH_STOP_KEY = "File with Stop Key not found";
     private static final String UNKNOWN_ERROR_MESSAGE = "Unknown error";
     private static final String USER_ID_KEY = "user_id";
-    private static final String PATH_TO_URL_MODULE = "pathToURLModule";
+    private static final String PATH_TO_URL_MODULE = "deploy\\URLModule-0.0.1.jar";
     private static final String PORT_KEY = "port";
     private static final String BUFFER_SIZE_KEY = "bufferSize";
     private static final String THREAD_POOL_CAPACITY_KEY = "threadPoolCapacity";
     private static final String SESSION_LIFE_TIME_KEY = "sessionLifeTime";
     private static final String TIMER_START_INTERVAL_KEY = "timerStartInterval";
     private static final String PATH_TO_RESOURCES_KEY = "pathToResources";
+    private static final String SERVER_ADDRESS = "http://127.0.0.1";
     private static final int DEFAULT_PORT = 1488;
     private static final int DEFAULT_BUFFER_SIZE = 10485760;
     private static final int DEFAULT_THREAD_POOL_CAPACITY = 20;
@@ -57,7 +58,7 @@ public class Server {
             throws NoSuchMethodException, IOException, InstantiationException, IllegalAccessException, InvocationTargetException, ClassNotFoundException {
         this.properties = properties;
         ApplicationLoader applicationLoader = new ApplicationLoader();
-        urlHandlers.putAll(applicationLoader.load(properties.getProperty(PATH_TO_URL_MODULE)));
+        urlHandlers.putAll(applicationLoader.load(PATH_TO_URL_MODULE));
         this.port = Optional.of(Integer.parseInt(properties.getProperty(PORT_KEY))).orElse(DEFAULT_PORT);
         this.bufferSize = Optional.of(Integer.parseInt(properties.getProperty(BUFFER_SIZE_KEY))).orElse(DEFAULT_BUFFER_SIZE);
         threadPool = Executors.newFixedThreadPool(Optional.of(Integer.parseInt(properties.getProperty(THREAD_POOL_CAPACITY_KEY)))
@@ -67,9 +68,9 @@ public class Server {
         sessionRemoveTimer.scheduleAtFixedRate(new SessionRemover(sessions, Optional.of(Long.parseLong(properties.getProperty
                 (SESSION_LIFE_TIME_KEY))).orElse(DEFAULT_SESSION_LIFE_TIME)), TIMER_START_DELAY, Optional.of
                 (Long.parseLong(properties.getProperty(TIMER_START_INTERVAL_KEY))).orElse(DEFAULT_TIMER_START_INTERVAL));
-        stopServerKey = UUID.randomUUID();
         try(FileWriter fileWriter = new FileWriter(PATH_TO_FILE_WITH_STOP_KEY)){
-            fileWriter.write(String.valueOf(stopServerKey));
+            stopServerKey = UUID.randomUUID();
+            fileWriter.write(SERVER_ADDRESS + CommonConstants.COLON_SYMBOL + port + CommonConstants.SLASH + stopServerKey);
         }
         catch (IOException e) {
             LOGGER.log(Level.INFO, MISSING_FILE_WITH_STOP_KEY);
@@ -148,10 +149,8 @@ public class Server {
         }
     }
 
-    private void checkForStopKey(String requestURL) throws IOException {
-        Scanner scanner = new Scanner(new File(PATH_TO_FILE_WITH_STOP_KEY));
-        String stopKey = scanner.nextLine();
-        if (requestURL.equals(stopKey)){
+    private void checkForStopKey(String requestURL){
+        if (requestURL.equals(String.valueOf(stopServerKey))){
             serverIsAlive = false;
         }
     }
