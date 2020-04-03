@@ -27,6 +27,8 @@ public class Server {
 
     private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
     private static final String INFO_ABOUT_REQUEST = "got request, method: %s, requested resource: %s \r\n";
+    private static final String PATH_TO_FILE_WITH_STOP_KEY = "E:\\Server\\StopServer.txt";
+    private static final String MISSING_FILE_WITH_STOP_KEY = "File with Stop Key not found";
     private static final String UNKNOWN_ERROR_MESSAGE = "Unknown error";
     private static final String USER_ID_KEY = "user_id";
     private static final String PATH_TO_URL_MODULE = "pathToURLModule";
@@ -35,19 +37,21 @@ public class Server {
     private static final String THREAD_POOL_CAPACITY_KEY = "threadPoolCapacity";
     private static final String SESSION_LIFE_TIME_KEY = "sessionLifeTime";
     private static final String TIMER_START_INTERVAL_KEY = "timerStartInterval";
-    private static final String ADDRESS_RESOURCES_KEY = "addressResources";
+    private static final String PATH_TO_RESOURCES_KEY = "pathToResources";
     private static final int DEFAULT_PORT = 1488;
     private static final int DEFAULT_BUFFER_SIZE = 10485760;
     private static final int DEFAULT_THREAD_POOL_CAPACITY = 20;
     private static final int TIMER_START_DELAY = 0;
     private static final long DEFAULT_SESSION_LIFE_TIME = 600000;
     private static final long DEFAULT_TIMER_START_INTERVAL = 300000;
+    private UUID stopServerKey;
     private Integer port;
     private Integer bufferSize;
     private Map<String, HttpSession> sessions = new HashMap<>();
     private ExecutorService threadPool;
     private Map<String, HttpHandler> urlHandlers = new HashMap<>();
     private Properties properties;
+    private boolean serverIsAlive;
 
     public Server(Properties properties)
             throws NoSuchMethodException, IOException, InstantiationException, IllegalAccessException, InvocationTargetException, ClassNotFoundException {
@@ -58,15 +62,23 @@ public class Server {
         this.bufferSize = Optional.of(Integer.parseInt(properties.getProperty(BUFFER_SIZE_KEY))).orElse(DEFAULT_BUFFER_SIZE);
         threadPool = Executors.newFixedThreadPool(Optional.of(Integer.parseInt(properties.getProperty(THREAD_POOL_CAPACITY_KEY)))
                 .orElse(DEFAULT_THREAD_POOL_CAPACITY));
+        serverIsAlive = true;
         Timer sessionRemoveTimer = new Timer();
         sessionRemoveTimer.scheduleAtFixedRate(new SessionRemover(sessions, Optional.of(Long.parseLong(properties.getProperty
                 (SESSION_LIFE_TIME_KEY))).orElse(DEFAULT_SESSION_LIFE_TIME)), TIMER_START_DELAY, Optional.of
                 (Long.parseLong(properties.getProperty(TIMER_START_INTERVAL_KEY))).orElse(DEFAULT_TIMER_START_INTERVAL));
+        stopServerKey = UUID.randomUUID();
+        try(FileWriter fileWriter = new FileWriter(PATH_TO_FILE_WITH_STOP_KEY)){
+            fileWriter.write(String.valueOf(stopServerKey));
+        }
+        catch (IOException e) {
+            LOGGER.log(Level.INFO, MISSING_FILE_WITH_STOP_KEY);
+        }
     }
 
     public void start() throws IOException {
         ServerSocket serverSocket = new ServerSocket(port);
-        while (true) {
+        while (serverIsAlive) {
             acceptAndProcess(serverSocket);
         }
     }
@@ -88,6 +100,7 @@ public class Server {
              BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(socket.getOutputStream(), bufferSize)) {
             RequestReader requestReader = new RequestReader();
             Request request = requestReader.readRequest(bufferedInputStream);
+            checkForStopKey(request.getResource());
             LOGGER.log(Level.INFO, String.format(INFO_ABOUT_REQUEST, request.getMethod(), request.getResource()));
             Response response = new Response();
             request.setSession(getSession(request, response));
@@ -131,7 +144,15 @@ public class Server {
         if (urlHandlers.containsKey(request.getResource())) {
             return urlHandlers.get(request.getResource());
         } else {
-            return new DefaultHttpHandler(properties.getProperty(ADDRESS_RESOURCES_KEY));
+            return new DefaultHttpHandler(properties.getProperty(PATH_TO_RESOURCES_KEY));
+        }
+    }
+
+    private void checkForStopKey(String requestURL) throws IOException {
+        Scanner scanner = new Scanner(new File(PATH_TO_FILE_WITH_STOP_KEY));
+        String stopKey = scanner.nextLine();
+        if (requestURL.equals(stopKey)){
+            serverIsAlive = false;
         }
     }
 
